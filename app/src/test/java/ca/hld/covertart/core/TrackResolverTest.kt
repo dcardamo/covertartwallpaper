@@ -88,4 +88,13 @@ class TrackResolverTest {
         val b = NowPlaying("Artist", "Title", "Album", null, PlaybackState.PAUSED)
         assertEquals(a.identityKey, b.identityKey)
     }
+
+    @Test
+    fun artistFallsBackToAlbumArtist() {
+        val s = snapshot(
+            PlaybackState.PLAYING, lastActive = 1,
+            strings = mapOf(MetadataKeys.ALBUM_ARTIST to "The Band"),
+        )
+        assertEquals("The Band", TrackResolver.resolve(listOf(s))!!.artist)
+    }
 }
