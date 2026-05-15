@@ -90,6 +90,13 @@ class TrackResolverTest {
     }
 
     @Test
+    fun otherStateIsNotTreatedAsPlaying() {
+        val other = snapshot(PlaybackState.OTHER, lastActive = 100, strings = mapOf(MetadataKeys.TITLE to "Other"))
+        val playing = snapshot(PlaybackState.PLAYING, lastActive = 1, strings = mapOf(MetadataKeys.TITLE to "Playing"))
+        assertEquals("Playing", TrackResolver.resolve(listOf(other, playing))!!.title)
+    }
+
+    @Test
     fun artistFallsBackToAlbumArtist() {
         val s = snapshot(
             PlaybackState.PLAYING, lastActive = 1,
