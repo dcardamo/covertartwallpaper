@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -24,6 +25,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
@@ -73,8 +75,15 @@ private fun StatusScreen(
             Text("Grant notification access")
         }
 
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Switch(checked = masterEnabled, onCheckedChange = onToggleMaster)
+        Row(
+            modifier = Modifier.toggleable(
+                value = masterEnabled,
+                role = Role.Switch,
+                onValueChange = onToggleMaster,
+            ),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Switch(checked = masterEnabled, onCheckedChange = null)
             Spacer(Modifier.width(12.dp))
             Text(if (masterEnabled) "Wallpaper updates on" else "Wallpaper updates off")
         }
