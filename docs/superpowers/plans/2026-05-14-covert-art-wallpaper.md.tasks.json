@@ -4,79 +4,104 @@
     {
       "id": 0,
       "subject": "Task 0: Nix dev environment",
-      "status": "pending",
+      "status": "completed",
       "description": "**Goal:** A `nix develop` shell providing JDK 17, Gradle, and the Android SDK with ANDROID_HOME set.\n\n**Files:**\n- Create: flake.nix\n- Create: .envrc\n\n**Verify:** `nix develop --command bash -c 'java -version 2>&1 | head -1 && ls \"$ANDROID_HOME/platforms\" && gradle --version | head -3'`\n\n```json:metadata\n{\"files\": [\"flake.nix\", \".envrc\"], \"verifyCommand\": \"nix develop --command bash -c 'java -version 2>&1 | head -1 && ls \\\"$ANDROID_HOME/platforms\\\" && gradle --version | head -3'\", \"acceptanceCriteria\": [\"nix develop gives java 17\", \"ANDROID_HOME has platforms/android-34 and build-tools/34.0.0\", \"gradle --version works in the shell\"]}\n```"
     },
     {
       "id": 1,
       "subject": "Task 1: Gradle project scaffold",
-      "status": "pending",
-      "blockedBy": [0],
-      "description": "**Goal:** A buildable Android app skeleton — assembleDebug produces an APK and test runs.\n\n**Files:**\n- Create: settings.gradle.kts, build.gradle.kts, gradle.properties, gradle/libs.versions.toml\n- Create: gradlew + gradle/wrapper/* (generated)\n- Create: app/build.gradle.kts, app/proguard-rules.pro, app/src/main/AndroidManifest.xml, app/src/main/java/ca/hld/covertart/MainActivity.kt\n\n**Verify:** `nix develop --command ./gradlew assembleDebug test`\n\n```json:metadata\n{\"files\": [\"settings.gradle.kts\", \"build.gradle.kts\", \"gradle.properties\", \"gradle/libs.versions.toml\", \"app/build.gradle.kts\", \"app/proguard-rules.pro\", \"app/src/main/AndroidManifest.xml\", \"app/src/main/java/ca/hld/covertart/MainActivity.kt\"], \"verifyCommand\": \"nix develop --command ./gradlew assembleDebug test\", \"acceptanceCriteria\": [\"assembleDebug builds app-debug.apk\", \"test succeeds\", \"applicationId ca.hld.covertart, minSdk 29, target/compileSdk 34\"]}\n```"
+      "status": "completed",
+      "blockedBy": [
+        0
+      ],
+      "description": "**Goal:** A buildable Android app skeleton \u2014 assembleDebug produces an APK and test runs.\n\n**Files:**\n- Create: settings.gradle.kts, build.gradle.kts, gradle.properties, gradle/libs.versions.toml\n- Create: gradlew + gradle/wrapper/* (generated)\n- Create: app/build.gradle.kts, app/proguard-rules.pro, app/src/main/AndroidManifest.xml, app/src/main/java/ca/hld/covertart/MainActivity.kt\n\n**Verify:** `nix develop --command ./gradlew assembleDebug test`\n\n```json:metadata\n{\"files\": [\"settings.gradle.kts\", \"build.gradle.kts\", \"gradle.properties\", \"gradle/libs.versions.toml\", \"app/build.gradle.kts\", \"app/proguard-rules.pro\", \"app/src/main/AndroidManifest.xml\", \"app/src/main/java/ca/hld/covertart/MainActivity.kt\"], \"verifyCommand\": \"nix develop --command ./gradlew assembleDebug test\", \"acceptanceCriteria\": [\"assembleDebug builds app-debug.apk\", \"test succeeds\", \"applicationId ca.hld.covertart, minSdk 29, target/compileSdk 34\"]}\n```"
     },
     {
       "id": 2,
       "subject": "Task 2: TrackResolver and core media types",
-      "status": "pending",
-      "blockedBy": [1],
+      "status": "completed",
+      "blockedBy": [
+        1
+      ],
       "description": "**Goal:** Pure JVM-tested logic that picks the session to follow and builds a NowPlaying with the album-art fallback chain.\n\n**Files:**\n- Create: app/src/main/java/ca/hld/covertart/core/SourceImage.kt, NowPlaying.kt, MetadataView.kt, TrackResolver.kt\n- Test: app/src/test/java/ca/hld/covertart/core/TrackResolverTest.kt\n\n**Verify:** `nix develop --command ./gradlew testDebugUnitTest --tests \"*TrackResolverTest\"`\n\n```json:metadata\n{\"files\": [\"app/src/main/java/ca/hld/covertart/core/SourceImage.kt\", \"app/src/main/java/ca/hld/covertart/core/NowPlaying.kt\", \"app/src/main/java/ca/hld/covertart/core/MetadataView.kt\", \"app/src/main/java/ca/hld/covertart/core/TrackResolver.kt\", \"app/src/test/java/ca/hld/covertart/core/TrackResolverTest.kt\"], \"verifyCommand\": \"nix develop --command ./gradlew testDebugUnitTest --tests \\\"*TrackResolverTest\\\"\", \"acceptanceCriteria\": [\"pickSession prefers PLAYING, tie-breaks/falls back to most recent\", \"resolve extracts art via ALBUM_ART -> ART -> DISPLAY_ICON\", \"resolve returns null for empty list, art null when no art key\", \"identityKey ignores playback position\"]}\n```"
     },
     {
       "id": 3,
       "subject": "Task 3: ChangeGate",
-      "status": "pending",
-      "blockedBy": [1],
-      "description": "**Goal:** Pure gate deciding whether a wallpaper apply should happen — master toggle, identity dedup, debounce floor.\n\n**Files:**\n- Create: app/src/main/java/ca/hld/covertart/core/ChangeGate.kt\n- Test: app/src/test/java/ca/hld/covertart/core/ChangeGateTest.kt\n\n**Verify:** `nix develop --command ./gradlew testDebugUnitTest --tests \"*ChangeGateTest\"`\n\n```json:metadata\n{\"files\": [\"app/src/main/java/ca/hld/covertart/core/ChangeGate.kt\", \"app/src/test/java/ca/hld/covertart/core/ChangeGateTest.kt\"], \"verifyCommand\": \"nix develop --command ./gradlew testDebugUnitTest --tests \\\"*ChangeGateTest\\\"\", \"acceptanceCriteria\": [\"false when master disabled\", \"false when identity equals last applied\", \"false when within debounce window\", \"true for new identity after debounce window\", \"markApplied gates the same identity out\"]}\n```"
+      "status": "completed",
+      "blockedBy": [
+        1
+      ],
+      "description": "**Goal:** Pure gate deciding whether a wallpaper apply should happen \u2014 master toggle, identity dedup, debounce floor.\n\n**Files:**\n- Create: app/src/main/java/ca/hld/covertart/core/ChangeGate.kt\n- Test: app/src/test/java/ca/hld/covertart/core/ChangeGateTest.kt\n\n**Verify:** `nix develop --command ./gradlew testDebugUnitTest --tests \"*ChangeGateTest\"`\n\n```json:metadata\n{\"files\": [\"app/src/main/java/ca/hld/covertart/core/ChangeGate.kt\", \"app/src/test/java/ca/hld/covertart/core/ChangeGateTest.kt\"], \"verifyCommand\": \"nix develop --command ./gradlew testDebugUnitTest --tests \\\"*ChangeGateTest\\\"\", \"acceptanceCriteria\": [\"false when master disabled\", \"false when identity equals last applied\", \"false when within debounce window\", \"true for new identity after debounce window\", \"markApplied gates the same identity out\"]}\n```"
     },
     {
       "id": 4,
       "subject": "Task 4: RenderPlan geometry",
-      "status": "pending",
-      "blockedBy": [1],
-      "description": "**Goal:** Pure planRender producing the G treatment geometry — full-height crop, right-anchored — plus the left scrim rectangle.\n\n**Files:**\n- Create: app/src/main/java/ca/hld/covertart/render/RenderPlan.kt\n- Test: app/src/test/java/ca/hld/covertart/render/RenderPlanTest.kt\n\n**Verify:** `nix develop --command ./gradlew testDebugUnitTest --tests \"*RenderPlanTest\"`\n\n```json:metadata\n{\"files\": [\"app/src/main/java/ca/hld/covertart/render/RenderPlan.kt\", \"app/src/test/java/ca/hld/covertart/render/RenderPlanTest.kt\"], \"verifyCommand\": \"nix develop --command ./gradlew testDebugUnitTest --tests \\\"*RenderPlanTest\\\"\", \"acceptanceCriteria\": [\"source scaled so height fills target\", \"dstRect right edge = targetWidth, left = targetWidth - scaledWidth (may be negative)\", \"srcRect covers whole source\", \"scrimRect spans 0..round(targetWidth*scrimEndFraction)\", \"rejects non-positive dimensions\"]}\n```"
+      "status": "completed",
+      "blockedBy": [
+        1
+      ],
+      "description": "**Goal:** Pure planRender producing the G treatment geometry \u2014 full-height crop, right-anchored \u2014 plus the left scrim rectangle.\n\n**Files:**\n- Create: app/src/main/java/ca/hld/covertart/render/RenderPlan.kt\n- Test: app/src/test/java/ca/hld/covertart/render/RenderPlanTest.kt\n\n**Verify:** `nix develop --command ./gradlew testDebugUnitTest --tests \"*RenderPlanTest\"`\n\n```json:metadata\n{\"files\": [\"app/src/main/java/ca/hld/covertart/render/RenderPlan.kt\", \"app/src/test/java/ca/hld/covertart/render/RenderPlanTest.kt\"], \"verifyCommand\": \"nix develop --command ./gradlew testDebugUnitTest --tests \\\"*RenderPlanTest\\\"\", \"acceptanceCriteria\": [\"source scaled so height fills target\", \"dstRect right edge = targetWidth, left = targetWidth - scaledWidth (may be negative)\", \"srcRect covers whole source\", \"scrimRect spans 0..round(targetWidth*scrimEndFraction)\", \"rejects non-positive dimensions\"]}\n```"
     },
     {
       "id": 5,
       "subject": "Task 5: WallpaperExecutor interface, Android executor, and renderer",
-      "status": "pending",
-      "blockedBy": [4],
+      "status": "completed",
+      "blockedBy": [
+        4
+      ],
       "description": "**Goal:** The executor interface plus device-path AndroidCanvasExecutor and the WallpaperRenderer that glues planner to executor.\n\n**Files:**\n- Create: app/src/main/java/ca/hld/covertart/render/WallpaperExecutor.kt, AndroidCanvasExecutor.kt, WallpaperRenderer.kt\n\n**Verify:** `nix develop --command ./gradlew assembleDebug`\n\n```json:metadata\n{\"files\": [\"app/src/main/java/ca/hld/covertart/render/WallpaperExecutor.kt\", \"app/src/main/java/ca/hld/covertart/render/AndroidCanvasExecutor.kt\", \"app/src/main/java/ca/hld/covertart/render/WallpaperRenderer.kt\"], \"verifyCommand\": \"nix develop --command ./gradlew assembleDebug\", \"acceptanceCriteria\": [\"WallpaperExecutor<T>.execute(plan, source): T\", \"AndroidCanvasExecutor produces Bitmap sized to targetSize, draws art per dstRect, overlays gradient scrim\", \"AndroidSourceImage wraps Bitmap as SourceImage\", \"WallpaperRenderer<T> runs planRender then executor\", \"assembleDebug succeeds\"]}\n```"
     },
     {
       "id": 6,
       "subject": "Task 6: AWT executor and preview harness",
-      "status": "pending",
-      "blockedBy": [5],
-      "description": "**Goal:** Host-side render path — AwtExecutor plus procedural sample covers, faux-Niagara overlay, PreviewHarness entry point, and a runPreviews Gradle task.\n\n**Files:**\n- Create: app/src/test/java/ca/hld/covertart/render/AwtExecutor.kt\n- Create: app/src/test/java/ca/hld/covertart/preview/SampleCovers.kt, FauxNiagaraOverlay.kt, PreviewHarness.kt, PreviewHarnessTest.kt\n- Modify: app/build.gradle.kts (append runPreviews task)\n\n**Verify:** `nix develop --command ./gradlew runPreviews && ls app/build/previews/`\n\n```json:metadata\n{\"files\": [\"app/src/test/java/ca/hld/covertart/render/AwtExecutor.kt\", \"app/src/test/java/ca/hld/covertart/preview/SampleCovers.kt\", \"app/src/test/java/ca/hld/covertart/preview/FauxNiagaraOverlay.kt\", \"app/src/test/java/ca/hld/covertart/preview/PreviewHarness.kt\", \"app/src/test/java/ca/hld/covertart/preview/PreviewHarnessTest.kt\", \"app/build.gradle.kts\"], \"verifyCommand\": \"nix develop --command ./gradlew runPreviews && ls app/build/previews/\", \"acceptanceCriteria\": [\"AwtExecutor produces BufferedImage matching targetSize with art + scrim\", \"SampleCovers.all has dark, bright, pale, busy, contrast-edge\", \"PreviewHarness.run writes one PNG per cover with faux-Niagara overlay\", \"runPreviews writes PNGs to app/build/previews/\"]}\n```"
+      "status": "completed",
+      "blockedBy": [
+        5
+      ],
+      "description": "**Goal:** Host-side render path \u2014 AwtExecutor plus procedural sample covers, faux-Niagara overlay, PreviewHarness entry point, and a runPreviews Gradle task.\n\n**Files:**\n- Create: app/src/test/java/ca/hld/covertart/render/AwtExecutor.kt\n- Create: app/src/test/java/ca/hld/covertart/preview/SampleCovers.kt, FauxNiagaraOverlay.kt, PreviewHarness.kt, PreviewHarnessTest.kt\n- Modify: app/build.gradle.kts (append runPreviews task)\n\n**Verify:** `nix develop --command ./gradlew runPreviews && ls app/build/previews/`\n\n```json:metadata\n{\"files\": [\"app/src/test/java/ca/hld/covertart/render/AwtExecutor.kt\", \"app/src/test/java/ca/hld/covertart/preview/SampleCovers.kt\", \"app/src/test/java/ca/hld/covertart/preview/FauxNiagaraOverlay.kt\", \"app/src/test/java/ca/hld/covertart/preview/PreviewHarness.kt\", \"app/src/test/java/ca/hld/covertart/preview/PreviewHarnessTest.kt\", \"app/build.gradle.kts\"], \"verifyCommand\": \"nix develop --command ./gradlew runPreviews && ls app/build/previews/\", \"acceptanceCriteria\": [\"AwtExecutor produces BufferedImage matching targetSize with art + scrim\", \"SampleCovers.all has dark, bright, pale, busy, contrast-edge\", \"PreviewHarness.run writes one PNG per cover with faux-Niagara overlay\", \"runPreviews writes PNGs to app/build/previews/\"]}\n```"
     },
     {
       "id": 7,
       "subject": "Task 7: AppState (DataStore)",
-      "status": "pending",
-      "blockedBy": [1],
-      "description": "**Goal:** DataStore-backed persistent state — master toggle, last-applied track, status string — as Flows with suspend setters.\n\n**Files:**\n- Create: app/src/main/java/ca/hld/covertart/data/AppState.kt\n\n**Verify:** `nix develop --command ./gradlew assembleDebug`\n\n```json:metadata\n{\"files\": [\"app/src/main/java/ca/hld/covertart/data/AppState.kt\"], \"verifyCommand\": \"nix develop --command ./gradlew assembleDebug\", \"acceptanceCriteria\": [\"exposes masterEnabled Flow<Boolean> default true, lastTrack Flow<String> default empty, status Flow<String> default 'Not started'\", \"suspend setters persist to a preferences DataStore named covertart\", \"module compiles\"]}\n```"
+      "status": "completed",
+      "blockedBy": [
+        1
+      ],
+      "description": "**Goal:** DataStore-backed persistent state \u2014 master toggle, last-applied track, status string \u2014 as Flows with suspend setters.\n\n**Files:**\n- Create: app/src/main/java/ca/hld/covertart/data/AppState.kt\n\n**Verify:** `nix develop --command ./gradlew assembleDebug`\n\n```json:metadata\n{\"files\": [\"app/src/main/java/ca/hld/covertart/data/AppState.kt\"], \"verifyCommand\": \"nix develop --command ./gradlew assembleDebug\", \"acceptanceCriteria\": [\"exposes masterEnabled Flow<Boolean> default true, lastTrack Flow<String> default empty, status Flow<String> default 'Not started'\", \"suspend setters persist to a preferences DataStore named covertart\", \"module compiles\"]}\n```"
     },
     {
       "id": 8,
       "subject": "Task 8: MediaWatcherService, WallpaperApplier, and wiring",
-      "status": "pending",
-      "blockedBy": [2, 3, 5, 7],
+      "status": "completed",
+      "blockedBy": [
+        2,
+        3,
+        5,
+        7
+      ],
       "description": "**Goal:** The long-lived NotificationListenerService running the full pipeline (resolve -> gate -> render -> apply -> persist), plus WallpaperApplier and screenSize helper.\n\n**Files:**\n- Create: app/src/main/java/ca/hld/covertart/device/WallpaperApplier.kt, ScreenSize.kt\n- Create: app/src/main/java/ca/hld/covertart/service/MediaWatcherService.kt\n- Modify: app/src/main/AndroidManifest.xml (SET_WALLPAPER permission + service)\n\n**Verify:** `nix develop --command ./gradlew assembleDebug` and grep BIND_NOTIFICATION_LISTENER_SERVICE in manifest\n\n```json:metadata\n{\"files\": [\"app/src/main/java/ca/hld/covertart/device/WallpaperApplier.kt\", \"app/src/main/java/ca/hld/covertart/device/ScreenSize.kt\", \"app/src/main/java/ca/hld/covertart/service/MediaWatcherService.kt\", \"app/src/main/AndroidManifest.xml\"], \"verifyCommand\": \"nix develop --command ./gradlew assembleDebug && grep -c BIND_NOTIFICATION_LISTENER_SERVICE app/src/main/AndroidManifest.xml\", \"acceptanceCriteria\": [\"WallpaperApplier.apply calls setBitmap with FLAG_SYSTEM or FLAG_LOCK in one call\", \"service registers OnActiveSessionsChangedListener + per-controller callbacks, re-evaluates on onListenerConnected\", \"events go through trailing-debounce then resolve -> PLAYING check -> gate -> render -> apply -> AppState\", \"pause/stop no-op, missing art skips + updates status, setBitmap exceptions caught\", \"manifest declares service with BIND_NOTIFICATION_LISTENER_SERVICE + intent-filter\"]}\n```"
     },
     {
       "id": 9,
       "subject": "Task 9: MainActivity status screen",
-      "status": "pending",
-      "blockedBy": [7],
-      "description": "**Goal:** Replace placeholder MainActivity with the real Compose status screen — grant-access button, master toggle, status line — observing AppState.\n\n**Files:**\n- Modify: app/src/main/java/ca/hld/covertart/MainActivity.kt (full replacement)\n\n**Verify:** `nix develop --command ./gradlew assembleDebug`\n\n```json:metadata\n{\"files\": [\"app/src/main/java/ca/hld/covertart/MainActivity.kt\"], \"verifyCommand\": \"nix develop --command ./gradlew assembleDebug\", \"acceptanceCriteria\": [\"button opens Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS\", \"Switch reflects and updates AppState.masterEnabled\", \"status line shows AppState.status via collectAsStateWithLifecycle\", \"assembleDebug succeeds\"]}\n```"
+      "status": "completed",
+      "blockedBy": [
+        7
+      ],
+      "description": "**Goal:** Replace placeholder MainActivity with the real Compose status screen \u2014 grant-access button, master toggle, status line \u2014 observing AppState.\n\n**Files:**\n- Modify: app/src/main/java/ca/hld/covertart/MainActivity.kt (full replacement)\n\n**Verify:** `nix develop --command ./gradlew assembleDebug`\n\n```json:metadata\n{\"files\": [\"app/src/main/java/ca/hld/covertart/MainActivity.kt\"], \"verifyCommand\": \"nix develop --command ./gradlew assembleDebug\", \"acceptanceCriteria\": [\"button opens Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS\", \"Switch reflects and updates AppState.masterEnabled\", \"status line shows AppState.status via collectAsStateWithLifecycle\", \"assembleDebug succeeds\"]}\n```"
     },
     {
       "id": 10,
       "subject": "Task 10: Release signing and GitHub Actions CI",
-      "status": "pending",
-      "blockedBy": [8, 9, 6],
+      "status": "completed",
+      "blockedBy": [
+        8,
+        9,
+        6
+      ],
       "description": "**Goal:** Wire conditional release signing from Gradle properties, add the CI workflow (test -> previews -> signed release -> GitHub Release), document keystore + Obtainium setup.\n\n**Files:**\n- Modify: app/build.gradle.kts (signingConfigs + wire release)\n- Create: .github/workflows/build.yml\n- Modify: README.md\n\n**Verify:** generate throwaway keystore, run assembleRelease with -P signing props -> BUILD SUCCESSFUL + signed APK\n\n```json:metadata\n{\"files\": [\"app/build.gradle.kts\", \".github/workflows/build.yml\", \"README.md\"], \"verifyCommand\": \"nix develop --command ./gradlew assembleRelease -PversionCode=7 -PsigningKeystore=$PWD/ci-test.keystore -PsigningKeyAlias=covertart -PsigningKeyPassword=testpass -PsigningStorePassword=testpass\", \"acceptanceCriteria\": [\"assembleRelease produces signed APK when signing props present, configures fine when absent\", \"CI runs on push to main + workflow_dispatch: checkout, JDK 17, Android SDK, test, runPreviews + artifact, signed assembleRelease, GitHub Release v1.0.<run_number>\", \"versionCode = run number, versionName = 1.0.<run_number>\", \"README documents keystore generation, secrets, Obtainium setup\"]}\n```"
     }
   ],
-  "lastUpdated": "2026-05-14T00:00:00Z"
+  "lastUpdated": "2026-05-15T03:04:03Z"
 }
