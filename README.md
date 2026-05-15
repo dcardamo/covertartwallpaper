@@ -16,36 +16,17 @@ direnv allow        # or: nix develop
 ./gradlew assembleDebug
 ```
 
-## Release signing (one-time)
+## Release signing
 
-Generate a release keystore locally — it is never committed:
+The release keystore is committed at `release.keystore` and the alias and
+passwords are hardcoded in `app/build.gradle.kts`. This is deliberate: the app
+is distributed only via Obtainium from this public repo, so a consistent
+signing key just needs to be reproducible across builds, not secret. The key
+is project-specific (it signs only `ca.hld.covertart`) and shares nothing with
+any other keystore.
 
-```sh
-keytool -genkeypair -v \
-  -keystore release.keystore -alias covertart \
-  -keyalg RSA -keysize 2048 -validity 10000 \
-  -dname "CN=Covert Art Wallpaper"
-```
-
-> `keytool` will prompt for both the keystore password and the key password — note them, you'll need them for the secrets below.
-
-Add these GitHub Actions repository secrets:
-
-| Secret                   | Value                                              |
-|--------------------------|----------------------------------------------------|
-| `SIGNING_KEYSTORE`       | `base64 -w0 release.keystore`                      |
-| `SIGNING_KEY_ALIAS`      | the alias used above (`covertart`)                 |
-| `SIGNING_KEY_PASSWORD`   | the key password                                   |
-| `SIGNING_STORE_PASSWORD` | the keystore password                              |
-
-> macOS: `base64 -w0` is GNU-only. Substitute `base64 -i release.keystore | tr -d '\n'`.
-
-```sh
-gh secret set SIGNING_KEYSTORE       < <(base64 -w0 release.keystore)
-gh secret set SIGNING_KEY_ALIAS      --body "covertart"
-gh secret set SIGNING_KEY_PASSWORD   --body "<key-password>"
-gh secret set SIGNING_STORE_PASSWORD --body "<store-password>"
-```
+The practical trade-off: anyone could sign a build as `ca.hld.covertart`. Only
+install builds from this repo's GitHub Releases.
 
 ## Distribution
 

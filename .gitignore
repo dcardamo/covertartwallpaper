@@ -7,4 +7,5 @@ local.properties
 *.iml
 .idea/
 *.keystore
+!/release.keystore
 *.jks

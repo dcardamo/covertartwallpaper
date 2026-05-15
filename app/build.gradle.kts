@@ -19,23 +19,17 @@ android {
         versionName = "1.0.$runNumber"
     }
 
-    // Release signing is supplied by CI via -P properties; absent locally.
-    val signingKeystore = project.findProperty("signingKeystore") as String?
-    if (signingKeystore != null) {
-        val required = listOf("signingStorePassword", "signingKeyAlias", "signingKeyPassword")
-        val missing = required.filter { project.findProperty(it) == null }
-        check(missing.isEmpty()) {
-            "signingKeystore is set but the following Gradle properties are missing: $missing"
-        }
-    }
+    // The release keystore is committed at the repo root. This is deliberate:
+    // the app is distributed only via Obtainium from this public repo, so a
+    // consistent signing key just needs to be reproducible across builds, not
+    // secret. The key is project-specific (signs only ca.hld.covertart) and
+    // shares nothing with any other keystore.
     signingConfigs {
-        if (signingKeystore != null) {
-            create("release") {
-                storeFile = file(signingKeystore)
-                storePassword = project.findProperty("signingStorePassword") as String?
-                keyAlias = project.findProperty("signingKeyAlias") as String?
-                keyPassword = project.findProperty("signingKeyPassword") as String?
-            }
+        create("release") {
+            storeFile = rootProject.file("release.keystore")
+            storePassword = "covertart"
+            keyAlias = "covertart"
+            keyPassword = "covertart"
         }
     }
 
@@ -46,9 +40,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
-            if (signingKeystore != null) {
-                signingConfig = signingConfigs.getByName("release")
-            }
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 

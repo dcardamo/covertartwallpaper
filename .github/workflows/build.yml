@@ -38,26 +38,8 @@ jobs:
           name: previews
           path: app/build/previews/
 
-      - name: Decode signing keystore
-        env:
-          SIGNING_KEYSTORE: ${{ secrets.SIGNING_KEYSTORE }}
-        run: |
-          set -euo pipefail
-          test -n "$SIGNING_KEYSTORE" || { echo "::error::SIGNING_KEYSTORE secret is empty" >&2; exit 1; }
-          echo "$SIGNING_KEYSTORE" | base64 -d > "$RUNNER_TEMP/release.keystore"
-
       - name: Assemble signed release
-        env:
-          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
-          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
-          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
-        run: |
-          ./gradlew assembleRelease \
-            -PversionCode=${{ github.run_number }} \
-            -PsigningKeystore="$RUNNER_TEMP/release.keystore" \
-            -PsigningKeyAlias="$SIGNING_KEY_ALIAS" \
-            -PsigningKeyPassword="$SIGNING_KEY_PASSWORD" \
-            -PsigningStorePassword="$SIGNING_STORE_PASSWORD"
+        run: ./gradlew assembleRelease -PversionCode=${{ github.run_number }}
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
