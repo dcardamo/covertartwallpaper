@@ -11,5 +11,5 @@ data class NowPlaying(
     val playbackState: PlaybackState,
 ) {
     /** Stable identity for dedup â independent of playback position/seeks. */
-    val identityKey: String = "$artist \u0000$album\u0000$title"
+    val identityKey: String = "$artist\u0000$album\u0000$title"
 }
