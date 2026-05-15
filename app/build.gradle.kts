@@ -54,48 +54,47 @@ dependencies {
     testImplementation(libs.junit)
 }
 
-// AGP passes -no-jdk to the Kotlin compiler for Android targets, which removes java.awt from
-// the compile classpath.  We extract java.desktop.jmod into a jar at configure time and add it
-// as testCompileOnly so the AWT-backed preview harness (src/test) can resolve java.awt.* without
-// polluting the APK classpath.  At runtime the full JDK is available, so no jvmArgs needed.
-val javaHome = File(System.getProperty("java.home")!!)
-val jdeskJmod = File(javaHome, "jmods/java.desktop.jmod")
-val jdeskJar = layout.buildDirectory.file("jdk-stubs/java-desktop.jar").get().asFile
-
-if (jdeskJmod.exists() && !jdeskJar.exists()) {
-    jdeskJar.parentFile.mkdirs()
-    // Extract classes/ tree from the jmod and repack as a plain jar.
-    exec {
-        commandLine(
-            File(javaHome, "bin/jmod").absolutePath,
-            "extract",
-            "--dir", jdeskJar.parentFile.absolutePath + "/jmod-extracted",
-            jdeskJmod.absolutePath,
-        )
-    }
-    exec {
-        commandLine(
-            File(javaHome, "bin/jar").absolutePath,
-            "--create",
-            "--file", jdeskJar.absolutePath,
-            "-C", jdeskJar.parentFile.absolutePath + "/jmod-extracted/classes",
-            ".",
-        )
+// AGP passes -no-jdk to the Kotlin compiler for Android variants, which strips
+// java.awt from the (test) compile classpath. The host-side preview harness in
+// src/test needs java.awt, so we extract the JDK's java.desktop module into a
+// jar and put it on the test-only compile classpath. testCompileOnly => never
+// reaches the APK. Declared inputs/outputs make this correct across JDK changes
+// and `clean`, and keep configuration caching intact.
+val extractJavaDesktop by tasks.registering {
+    val javaHome = File(System.getProperty("java.home")!!)
+    val jmod = File(javaHome, "jmods/java.desktop.jmod")
+    val outJar = layout.buildDirectory.file("jdk-stubs/java-desktop.jar")
+    onlyIf { jmod.exists() }
+    inputs.file(jmod)
+    outputs.file(outJar)
+    doLast {
+        val extracted = layout.buildDirectory.dir("jdk-stubs/jmod-extracted").get().asFile
+        extracted.deleteRecursively()
+        exec {
+            commandLine(File(javaHome, "bin/jmod").path, "extract",
+                "--dir", extracted.path, jmod.path)
+        }
+        exec {
+            commandLine(File(javaHome, "bin/jar").path, "--create",
+                "--file", outJar.get().asFile.path,
+                "-C", File(extracted, "classes").path, ".")
+        }
     }
 }
 
 dependencies {
-    testCompileOnly(files(jdeskJar))
+    testCompileOnly(files(extractJavaDesktop))
 }
 
 // Renders the preview harness independently of the full unit-test suite.
 // Reuses the debug unit-test classpath so AWT + test-source classes are available.
+// No declared outputs / always re-runs intentionally — this is an iterate-on-visuals task.
 tasks.register<Test>("runPreviews") {
     description = "Renders sample wallpapers to build/previews/ via the AWT executor."
     group = "verification"
-    val debugUnitTest = tasks.named<Test>("testDebugUnitTest").get()
-    testClassesDirs = debugUnitTest.testClassesDirs
-    classpath = debugUnitTest.classpath
+    val debugUnitTest = tasks.named<Test>("testDebugUnitTest")
+    testClassesDirs = files(debugUnitTest.map { it.testClassesDirs })
+    classpath = files(debugUnitTest.map { it.classpath })
     useJUnit()
     filter { includeTestsMatching("*PreviewHarnessTest") }
     systemProperty(

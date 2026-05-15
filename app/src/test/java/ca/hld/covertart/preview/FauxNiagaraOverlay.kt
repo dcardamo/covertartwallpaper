@@ -8,11 +8,11 @@ import java.awt.image.BufferedImage
 /**
  * Composites a left-pinned clock + app names onto a rendered wallpaper,
  * approximating the Niagara launcher so previews show text in context.
- * Mutates and returns the given image.
+ * Mutates the given image in place.
  */
 object FauxNiagaraOverlay {
 
-    fun compositeOnto(wallpaper: BufferedImage): BufferedImage {
+    fun compositeOnto(wallpaper: BufferedImage) {
         val g = wallpaper.createGraphics()
         g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON)
         g.color = Color.WHITE
@@ -26,6 +26,5 @@ object FauxNiagaraOverlay {
         apps.forEachIndexed { i, name -> g.drawString(name, pad, 360 + i * 70) }
 
         g.dispose()
-        return wallpaper
     }
 }
