@@ -20,8 +20,10 @@ import ca.hld.covertart.device.screenSize
 import ca.hld.covertart.render.AndroidCanvasExecutor
 import ca.hld.covertart.render.AndroidSourceImage
 import ca.hld.covertart.render.WallpaperRenderer
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
@@ -37,15 +39,27 @@ import kotlinx.coroutines.launch
  */
 class MediaWatcherService : NotificationListenerService() {
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    /**
+     * All shared mutable state (controllers, controllerCallbacks, lastActiveAt,
+     * pendingJob, gate) is confined to this single-threaded dispatcher.
+     * MediaController callbacks and the sessions listener fire on framework
+     * threads; they marshal their work onto [stateContext] via [scope], so
+     * exactly one thread ever touches that state and there is a happens-before
+     * edge between every access.
+     */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private val stateContext: CoroutineDispatcher = Dispatchers.Default.limitedParallelism(1)
+    private val scope = CoroutineScope(SupervisorJob() + stateContext)
+
     private val gate = ChangeGate(debounceMillis = DEBOUNCE_MILLIS)
     private val renderer = WallpaperRenderer(AndroidCanvasExecutor())
 
     private lateinit var sessionManager: MediaSessionManager
     private lateinit var appState: AppState
     private lateinit var applier: WallpaperApplier
-    private lateinit var componentName: ComponentName
+    private var listenerRegistered = false
 
+    // All confined to stateContext.
     private val controllers = mutableListOf<MediaController>()
     private val controllerCallbacks = mutableMapOf<MediaController, MediaController.Callback>()
     private val lastActiveAt = mutableMapOf<MediaController, Long>()
@@ -53,52 +67,76 @@ class MediaWatcherService : NotificationListenerService() {
 
     private val sessionsListener =
         MediaSessionManager.OnActiveSessionsChangedListener { list ->
-            updateControllers(list ?: emptyList())
-            onSessionEvent()
+            // Fires on a framework thread — marshal onto the state thread.
+            scope.launch {
+                updateControllers(list ?: emptyList())
+                scheduleEvaluate()
+            }
         }
 
     override fun onListenerConnected() {
         sessionManager = getSystemService(Context.MEDIA_SESSION_SERVICE) as MediaSessionManager
         appState = AppState(applicationContext)
         applier = WallpaperApplier(applicationContext)
-        componentName = ComponentName(this, MediaWatcherService::class.java)
+        val componentName = ComponentName(this, MediaWatcherService::class.java)
 
-        sessionManager.addOnActiveSessionsChangedListener(sessionsListener, componentName)
-        updateControllers(sessionManager.getActiveSessions(componentName))
-        // Evaluate whatever is already playing right now (covers reboot/restart).
-        onSessionEvent()
+        // Android may call onListenerConnected more than once without an
+        // intervening onListenerDisconnected; register the listener only once.
+        if (!listenerRegistered) {
+            sessionManager.addOnActiveSessionsChangedListener(sessionsListener, componentName)
+            listenerRegistered = true
+        }
+        val initial = sessionManager.getActiveSessions(componentName)
+        scope.launch {
+            updateControllers(initial)
+            // Evaluate whatever is already playing right now (covers reboot/restart).
+            scheduleEvaluate()
+        }
     }
 
     override fun onListenerDisconnected() {
-        sessionManager.removeOnActiveSessionsChangedListener(sessionsListener)
-        controllers.forEach { c -> controllerCallbacks[c]?.let(c::unregisterCallback) }
-        controllers.clear()
-        controllerCallbacks.clear()
-        lastActiveAt.clear()
-        pendingJob?.cancel()
+        // Can fire before onListenerConnected ever ran (bind failure / rapid
+        // permission toggle) — guard the lateinit access.
+        if (::sessionManager.isInitialized && listenerRegistered) {
+            sessionManager.removeOnActiveSessionsChangedListener(sessionsListener)
+            listenerRegistered = false
+        }
+        scope.launch {
+            controllers.forEach { c -> controllerCallbacks[c]?.let(c::unregisterCallback) }
+            controllers.clear()
+            controllerCallbacks.clear()
+            lastActiveAt.clear()
+            pendingJob?.cancel()
+            pendingJob = null
+        }
     }
 
     override fun onDestroy() {
+        // Terminal for this service instance; Android creates a fresh instance
+        // (with a fresh scope) on the next bind.
         scope.cancel()
         super.onDestroy()
     }
 
-    /** Diff the active controller list, registering/unregistering callbacks. */
+    /** Diff the active controller list, registering/unregistering callbacks. Runs on [stateContext]. */
     private fun updateControllers(active: List<MediaController>) {
         controllers.filter { it !in active }.forEach { gone ->
             controllerCallbacks.remove(gone)?.let(gone::unregisterCallback)
             lastActiveAt.remove(gone)
         }
         active.filter { it !in controllers }.forEach { added ->
+            // MediaController has no equals/hashCode override, so this diff is by
+            // identity; a session resurfacing as a new wrapper instance just
+            // causes a benign unregister/re-register cycle.
             val cb = object : MediaController.Callback() {
                 override fun onMetadataChanged(metadata: MediaMetadata?) {
-                    touch(added); onSessionEvent()
+                    scope.launch { touch(added); scheduleEvaluate() }
                 }
                 override fun onPlaybackStateChanged(state: AndroidPlaybackState?) {
-                    touch(added); onSessionEvent()
+                    scope.launch { touch(added); scheduleEvaluate() }
                 }
                 override fun onSessionDestroyed() {
-                    onSessionEvent()
+                    scope.launch { touch(added); scheduleEvaluate() }
                 }
             }
             added.registerCallback(cb)
@@ -109,12 +147,13 @@ class MediaWatcherService : NotificationListenerService() {
         controllers.addAll(active)
     }
 
+    /** Runs on [stateContext]. */
     private fun touch(controller: MediaController) {
         lastActiveAt[controller] = System.currentTimeMillis()
     }
 
-    /** Trailing debounce: each event cancels the previous pending evaluation. */
-    private fun onSessionEvent() {
+    /** Trailing debounce: each event cancels the previous pending evaluation. Runs on [stateContext]. */
+    private fun scheduleEvaluate() {
         pendingJob?.cancel()
         pendingJob = scope.launch {
             delay(DEBOUNCE_MILLIS)
@@ -122,6 +161,7 @@ class MediaWatcherService : NotificationListenerService() {
         }
     }
 
+    /** Runs on [stateContext]; the sole accessor of [gate]. */
     private suspend fun evaluate() {
         val snapshots = controllers.map { c ->
             SessionSnapshot(
@@ -147,8 +187,12 @@ class MediaWatcherService : NotificationListenerService() {
         try {
             val (w, h) = screenSize(applicationContext)
             val bitmap = renderer.render(art, w, h)
-            applier.apply(bitmap)
-            bitmap.recycle()
+            // recycle() must run even if apply() throws the documented IOException.
+            try {
+                applier.apply(bitmap)
+            } finally {
+                bitmap.recycle()
+            }
             gate.markApplied(nowPlaying, now)
             appState.setLastTrack(label)
             appState.setStatus("Listening — last set: $label")
