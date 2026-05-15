@@ -11,15 +11,14 @@ package ca.hld.covertart.core
 class ChangeGate(private val debounceMillis: Long = 400L) {
 
     private var lastAppliedIdentity: String? = null
-    // Initialised far enough in the past that the debounce window is always
-    // considered elapsed before the first markApplied call.
-    private var lastAppliedAtMillis: Long = Long.MIN_VALUE / 2
+    private var lastAppliedAtMillis: Long? = null
 
     /** @return true if the caller should render + apply for [nowPlaying]. */
     fun shouldApply(nowPlaying: NowPlaying, masterEnabled: Boolean, nowMillis: Long): Boolean {
         if (!masterEnabled) return false
         if (nowPlaying.identityKey == lastAppliedIdentity) return false
-        if (nowMillis - lastAppliedAtMillis < debounceMillis) return false
+        val sinceLastApply = lastAppliedAtMillis?.let { nowMillis - it }
+        if (sinceLastApply != null && sinceLastApply < debounceMillis) return false
         return true
     }
 

@@ -42,4 +42,11 @@ class ChangeGateTest {
         gate.markApplied(track("a"), nowMillis = 10_000)
         assertTrue(gate.shouldApply(track("b"), masterEnabled = true, nowMillis = 10_500))
     }
+
+    @Test
+    fun allowsNewIdentityAtExactDebounceBoundary() {
+        val gate = ChangeGate(debounceMillis = 400)
+        gate.markApplied(track("a"), nowMillis = 10_000)
+        assertTrue(gate.shouldApply(track("b"), masterEnabled = true, nowMillis = 10_400))
+    }
 }
