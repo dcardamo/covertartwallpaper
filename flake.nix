@@ -14,10 +14,11 @@
             android_sdk.accept_license = true;
           };
         };
+        buildToolsVersion = "34.0.0";
         androidComposition = pkgs.androidenv.composeAndroidPackages {
           cmdLineToolsVersion = "11.0";
           platformToolsVersion = "35.0.2";
-          buildToolsVersions = [ "34.0.0" ];
+          buildToolsVersions = [ buildToolsVersion ];
           platformVersions = [ "34" ];
           includeEmulator = false;
           includeSystemImages = false;
@@ -33,7 +34,7 @@
           JAVA_HOME = "${pkgs.jdk17}";
           # NixOS ships its own aapt2; point Gradle at the SDK's prebuilt one.
           shellHook = ''
-            export GRADLE_OPTS="-Dorg.gradle.project.android.aapt2FromMavenOverride=${sdkRoot}/build-tools/34.0.0/aapt2"
+            export GRADLE_OPTS="-Dorg.gradle.project.android.aapt2FromMavenOverride=${sdkRoot}/build-tools/${buildToolsVersion}/aapt2"
           '';
         };
       });
