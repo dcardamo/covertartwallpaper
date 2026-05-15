@@ -53,3 +53,53 @@ dependencies {
     implementation(libs.androidx.datastore.preferences)
     testImplementation(libs.junit)
 }
+
+// AGP passes -no-jdk to the Kotlin compiler for Android targets, which removes java.awt from
+// the compile classpath.  We extract java.desktop.jmod into a jar at configure time and add it
+// as testCompileOnly so the AWT-backed preview harness (src/test) can resolve java.awt.* without
+// polluting the APK classpath.  At runtime the full JDK is available, so no jvmArgs needed.
+val javaHome = File(System.getProperty("java.home")!!)
+val jdeskJmod = File(javaHome, "jmods/java.desktop.jmod")
+val jdeskJar = layout.buildDirectory.file("jdk-stubs/java-desktop.jar").get().asFile
+
+if (jdeskJmod.exists() && !jdeskJar.exists()) {
+    jdeskJar.parentFile.mkdirs()
+    // Extract classes/ tree from the jmod and repack as a plain jar.
+    exec {
+        commandLine(
+            File(javaHome, "bin/jmod").absolutePath,
+            "extract",
+            "--dir", jdeskJar.parentFile.absolutePath + "/jmod-extracted",
+            jdeskJmod.absolutePath,
+        )
+    }
+    exec {
+        commandLine(
+            File(javaHome, "bin/jar").absolutePath,
+            "--create",
+            "--file", jdeskJar.absolutePath,
+            "-C", jdeskJar.parentFile.absolutePath + "/jmod-extracted/classes",
+            ".",
+        )
+    }
+}
+
+dependencies {
+    testCompileOnly(files(jdeskJar))
+}
+
+// Renders the preview harness independently of the full unit-test suite.
+// Reuses the debug unit-test classpath so AWT + test-source classes are available.
+tasks.register<Test>("runPreviews") {
+    description = "Renders sample wallpapers to build/previews/ via the AWT executor."
+    group = "verification"
+    val debugUnitTest = tasks.named<Test>("testDebugUnitTest").get()
+    testClassesDirs = debugUnitTest.testClassesDirs
+    classpath = debugUnitTest.classpath
+    useJUnit()
+    filter { includeTestsMatching("*PreviewHarnessTest") }
+    systemProperty(
+        "previews.outputDir",
+        layout.buildDirectory.dir("previews").get().asFile.absolutePath,
+    )
+}
