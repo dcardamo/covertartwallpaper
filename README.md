@@ -27,6 +27,8 @@ keytool -genkeypair -v \
   -dname "CN=Covert Art Wallpaper"
 ```
 
+> `keytool` will prompt for both the keystore password and the key password — note them, you'll need them for the secrets below.
+
 Add these GitHub Actions repository secrets:
 
 | Secret                   | Value                                              |
@@ -35,6 +37,8 @@ Add these GitHub Actions repository secrets:
 | `SIGNING_KEY_ALIAS`      | the alias used above (`covertart`)                 |
 | `SIGNING_KEY_PASSWORD`   | the key password                                   |
 | `SIGNING_STORE_PASSWORD` | the keystore password                              |
+
+> macOS: `base64 -w0` is GNU-only. Substitute `base64 -i release.keystore | tr -d '\n'`.
 
 ```sh
 gh secret set SIGNING_KEYSTORE       < <(base64 -w0 release.keystore)

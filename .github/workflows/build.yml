@@ -20,6 +20,7 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+          cache: gradle
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
@@ -31,6 +32,7 @@ jobs:
         run: ./gradlew runPreviews
 
       - name: Upload previews
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: previews
@@ -39,7 +41,10 @@ jobs:
       - name: Decode signing keystore
         env:
           SIGNING_KEYSTORE: ${{ secrets.SIGNING_KEYSTORE }}
-        run: echo "$SIGNING_KEYSTORE" | base64 -d > "$RUNNER_TEMP/release.keystore"
+        run: |
+          set -euo pipefail
+          test -n "$SIGNING_KEYSTORE" || { echo "::error::SIGNING_KEYSTORE secret is empty" >&2; exit 1; }
+          echo "$SIGNING_KEYSTORE" | base64 -d > "$RUNNER_TEMP/release.keystore"
 
       - name: Assemble signed release
         env:

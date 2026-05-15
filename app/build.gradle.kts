@@ -21,6 +21,13 @@ android {
 
     // Release signing is supplied by CI via -P properties; absent locally.
     val signingKeystore = project.findProperty("signingKeystore") as String?
+    if (signingKeystore != null) {
+        val required = listOf("signingStorePassword", "signingKeyAlias", "signingKeyPassword")
+        val missing = required.filter { project.findProperty(it) == null }
+        check(missing.isEmpty()) {
+            "signingKeystore is set but the following Gradle properties are missing: $missing"
+        }
+    }
     signingConfigs {
         if (signingKeystore != null) {
             create("release") {
