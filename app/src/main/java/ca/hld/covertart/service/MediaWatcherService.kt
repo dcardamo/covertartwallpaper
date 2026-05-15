@@ -6,6 +6,8 @@ import android.media.MediaMetadata
 import android.media.session.MediaController
 import android.media.session.MediaSessionManager
 import android.media.session.PlaybackState as AndroidPlaybackState
+import android.os.Handler
+import android.os.Looper
 import android.service.notification.NotificationListenerService
 import android.util.Log
 import ca.hld.covertart.core.ChangeGate
@@ -54,6 +56,16 @@ class MediaWatcherService : NotificationListenerService() {
 
     private val gate = ChangeGate(debounceMillis = DEBOUNCE_MILLIS)
     private val renderer = WallpaperRenderer(AndroidCanvasExecutor())
+
+    /**
+     * Used to dispatch [MediaController.Callback] invocations. We must pass an
+     * explicit Handler with a real Looper because `registerCallback(cb)` (the
+     * 1-arg overload) internally does `new Handler()`, which throws if called
+     * from a thread without a Looper — and we register callbacks from
+     * [stateContext], a Dispatchers.Default worker with no Looper. The
+     * callbacks themselves then `scope.launch { ... }` back onto stateContext.
+     */
+    private val callbackHandler = Handler(Looper.getMainLooper())
 
     private lateinit var sessionManager: MediaSessionManager
     private lateinit var appState: AppState
@@ -140,7 +152,7 @@ class MediaWatcherService : NotificationListenerService() {
                     scope.launch { touch(added); scheduleEvaluate() }
                 }
             }
-            added.registerCallback(cb)
+            added.registerCallback(cb, callbackHandler)
             controllerCallbacks[added] = cb
             lastActiveAt[added] = System.currentTimeMillis()
         }
