@@ -37,4 +37,18 @@ class RenderPlanTest {
         assertThrows(IllegalArgumentException::class.java) { planRender(0, 100, 100, 100) }
         assertThrows(IllegalArgumentException::class.java) { planRender(100, 100, 100, 0) }
     }
+
+    @Test
+    fun narrowArtLeavesPositiveLeftOffsetWithRightEdgePinned() {
+        val plan = planRender(srcWidth = 400, srcHeight = 1000, targetWidth = 1080, targetHeight = 1920)
+        // scale = 1920/1000 = 1.92 -> scaledWidth = round(768.0) = 768 -> left = 1080 - 768 = 312
+        assertEquals(IntRect(312, 0, 1080, 1920), plan.dstRect)
+    }
+
+    @Test
+    fun intRectComputesWidthAndHeight() {
+        val r = IntRect(left = 10, top = 20, right = 50, bottom = 100)
+        assertEquals(40, r.width)
+        assertEquals(80, r.height)
+    }
 }

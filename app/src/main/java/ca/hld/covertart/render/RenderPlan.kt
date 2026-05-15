@@ -1,5 +1,7 @@
 package ca.hld.covertart.render
 
+import kotlin.math.roundToInt
+
 /** Inclusive-left, exclusive-right integer rectangle. No platform dependency. */
 data class IntRect(val left: Int, val top: Int, val right: Int, val bottom: Int) {
     val width: Int get() = right - left
@@ -43,10 +45,10 @@ fun planRender(
     require(targetWidth > 0 && targetHeight > 0) { "target dimensions must be positive" }
 
     val scale = targetHeight.toFloat() / srcHeight.toFloat()
-    val scaledWidth = Math.round(srcWidth * scale)
+    val scaledWidth = (srcWidth * scale).roundToInt()
     val dstLeft = targetWidth - scaledWidth // negative when the art overflows left edge
 
-    val scrimWidth = Math.round(targetWidth * config.scrimEndFraction)
+    val scrimWidth = (targetWidth * config.scrimEndFraction).roundToInt()
 
     return RenderPlan(
         targetSize = IntRect(0, 0, targetWidth, targetHeight),
