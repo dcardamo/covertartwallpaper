@@ -1,0 +1,61 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Unit tests
+        run: ./gradlew test
+
+      - name: Render preview harness
+        run: ./gradlew runPreviews
+
+      - name: Upload previews
+        uses: actions/upload-artifact@v4
+        with:
+          name: previews
+          path: app/build/previews/
+
+      - name: Decode signing keystore
+        env:
+          SIGNING_KEYSTORE: ${{ secrets.SIGNING_KEYSTORE }}
+        run: echo "$SIGNING_KEYSTORE" | base64 -d > "$RUNNER_TEMP/release.keystore"
+
+      - name: Assemble signed release
+        env:
+          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
+        run: |
+          ./gradlew assembleRelease \
+            -PversionCode=${{ github.run_number }} \
+            -PsigningKeystore="$RUNNER_TEMP/release.keystore" \
+            -PsigningKeyAlias="$SIGNING_KEY_ALIAS" \
+            -PsigningKeyPassword="$SIGNING_KEY_PASSWORD" \
+            -PsigningStorePassword="$SIGNING_STORE_PASSWORD"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.${{ github.run_number }}
+          files: app/build/outputs/apk/release/app-release.apk

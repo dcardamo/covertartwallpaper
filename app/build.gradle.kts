@@ -19,6 +19,19 @@ android {
         versionName = "1.0.$runNumber"
     }
 
+    // Release signing is supplied by CI via -P properties; absent locally.
+    val signingKeystore = project.findProperty("signingKeystore") as String?
+    signingConfigs {
+        if (signingKeystore != null) {
+            create("release") {
+                storeFile = file(signingKeystore)
+                storePassword = project.findProperty("signingStorePassword") as String?
+                keyAlias = project.findProperty("signingKeyAlias") as String?
+                keyPassword = project.findProperty("signingKeyPassword") as String?
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
@@ -26,6 +39,9 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+            if (signingKeystore != null) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
 
