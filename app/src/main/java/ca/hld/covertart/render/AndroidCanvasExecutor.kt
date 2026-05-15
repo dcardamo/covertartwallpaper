@@ -8,6 +8,7 @@ import android.graphics.Paint
 import android.graphics.Rect
 import android.graphics.Shader
 import ca.hld.covertart.core.SourceImage
+import kotlin.math.roundToInt
 
 /** A SourceImage backed by an android.graphics.Bitmap (device path). */
 class AndroidSourceImage(val bitmap: Bitmap) : SourceImage {
@@ -19,7 +20,8 @@ class AndroidSourceImage(val bitmap: Bitmap) : SourceImage {
 class AndroidCanvasExecutor : WallpaperExecutor<Bitmap> {
 
     override fun execute(plan: RenderPlan, source: SourceImage): Bitmap {
-        val src = (source as AndroidSourceImage).bitmap
+        val src = (source as? AndroidSourceImage
+            ?: error("AndroidCanvasExecutor requires an AndroidSourceImage source")).bitmap
         val out = Bitmap.createBitmap(
             plan.targetSize.width,
             plan.targetSize.height,
@@ -32,7 +34,7 @@ class AndroidCanvasExecutor : WallpaperExecutor<Bitmap> {
         canvas.drawBitmap(src, srcRect, dstRect, Paint(Paint.FILTER_BITMAP_FLAG))
 
         val scrimEndX = plan.scrimRect.right.toFloat()
-        val startColor = Color.argb((plan.scrimStartAlpha * 255f).toInt(), 0, 0, 0)
+        val startColor = Color.argb((plan.scrimStartAlpha * 255f).roundToInt(), 0, 0, 0)
         val endColor = Color.argb(0, 0, 0, 0)
         val scrimPaint = Paint().apply {
             shader = LinearGradient(0f, 0f, scrimEndX, 0f, startColor, endColor, Shader.TileMode.CLAMP)
