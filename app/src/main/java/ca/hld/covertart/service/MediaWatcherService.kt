@@ -30,6 +30,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * The only long-lived process. As a NotificationListenerService, Android keeps
@@ -186,13 +187,16 @@ class MediaWatcherService : NotificationListenerService() {
         }
         try {
             val (w, h) = screenSize(applicationContext)
-            val bitmap = renderer.render(art, w, h)
+            // Render off the state thread so a slow render doesn't block new callbacks.
+            val bitmap = withContext(Dispatchers.Default) { renderer.render(art, w, h) }
             // recycle() must run even if apply() throws the documented IOException.
             try {
-                applier.apply(bitmap)
+                // setBitmap blocks on disk I/O — do it on Dispatchers.IO.
+                withContext(Dispatchers.IO) { applier.apply(bitmap) }
             } finally {
                 bitmap.recycle()
             }
+            // Back on stateContext here — gate.markApplied stays confined.
             gate.markApplied(nowPlaying, now)
             appState.setLastTrack(label)
             appState.setStatus("Listening — last set: $label")
